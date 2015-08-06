@@ -117,14 +117,14 @@ function setCounts()
 							sap.ui.getCore().byId("TileLieu").setNumber(TotalLieuCnt);
 						}
 							
-							html5sql.process("SELECT SUM(days) AS TotalHolidays FROM Absence where type = 'Holiday' ;",
+							html5sql.process("SELECT SUM(days) AS TotalHolidays FROM Absence where type = 'Holiday' and used <>  'DELETE';",
 							 function(transaction, results, rowsArray){
 									if (rowsArray.length>0){
 										HolidayCnt=rowsArray[0].TotalHolidays;
 									}
 									sap.ui.getCore().byId("TileHoliday").setNumber(TotalHolidayCnt-HolidayCnt);
 									
-									html5sql.process("SELECT SUM(days) AS TotalSick FROM Absence where type = 'Sick' ;",
+									html5sql.process("SELECT SUM(days) AS TotalSick FROM Absence where type = 'Sick'  and used <>  'DELETE';",
 											 function(transaction, results, rowsArray){
 												 if (rowsArray.length>0){
 														SickCnt=rowsArray[0].TotalSick;

@@ -5,7 +5,7 @@ var standardList  = new sap.m.List(
 			  {
 				  //items:standardListItem,
 				  itemPress:[function(oEvt) {		  
-					  buildDetailsContent(oEvt.getParameter("listItem").getId(),AbsenceType)
+					  buildDetailsContent(oEvt.getParameter("listItem").getId(),AbsenceType);
 					 
 					  oSplitApp.to("detail")}],
 				  mode:sap.m.ListMode.SingleSelectMaster
@@ -40,7 +40,8 @@ var standardList  = new sap.m.List(
 						    tap: [ function(oEvt) {		  
 								createAbsence(AbsenceType,startDate,endDate,
 										sap.ui.getCore().byId("Days").getValue(),
-										sap.ui.getCore().byId("Description").getValue()) 
+										sap.ui.getCore().byId("Description").getValue(),
+										sap.ui.getCore().byId("Comments").getValue()); 
 						    	formAbsence.close()
 								  } ]
 						   
@@ -64,8 +65,11 @@ var standardList  = new sap.m.List(
 									new sap.m.Input("Days",{ type: sap.m.InputType.Number}),
 									
 									new sap.m.Label({text:"Description"}),
-									new sap.m.Input("Description",{ type: sap.m.InputType.Input})
-					                
+									new sap.m.Input("Description",{ type: sap.m.InputType.Input}),
+									new sap.m.Label({text:"Comments"}),
+									new sap.m.TextArea('Comments',{
+										rows : 4
+									}),
 					                  
 								]
 	     					})
@@ -77,6 +81,8 @@ var firstEntry="none:-1";
 
 function buildAbsences(type){
 	AbsenceType = type;		
+	var lStatus="";
+	var lStatusState="Success";
 	html5sql.process("SELECT *  FROM Absence where type = '"+type+"' and used <> 'DELETE' order by start;",
 			 function(transaction, results, rowsArray){
 				if(rowsArray.length >0){
@@ -85,7 +91,17 @@ function buildAbsences(type){
 					
 				cnt = 0;
 				while (cnt<rowsArray.length){
-						
+					
+					if(type=='Lieu'){
+						if(rowsArray[cnt].days<0){
+							 lStatus="Off In Lieu"
+							 lStatusState="Success"
+						 }else{
+							 lStatus="Worked In Lieu"
+							 lStatusState="Error"
+						 }
+					}
+					 
 					  standardList.addItem(
 							  new sap.m.ObjectListItem("absence:"+rowsArray[cnt].id,
 								  {
@@ -104,8 +120,8 @@ function buildAbsences(type){
 							                ],
 							    firstStatus: [
 							                new sap.m.ObjectStatus( {
-							                    text: 'Success',
-							                    state:'Success'
+							                    text: lStatus,
+							                    state:lStatusState
 							                })
 							                ]
 						
