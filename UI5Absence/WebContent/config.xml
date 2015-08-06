@@ -3,12 +3,12 @@
 <!-- config.xml reference: https://build.phonegap.com/docs/config-xml -->
     <widget xmlns     = "http://www.w3.org/ns/widgets"
         xmlns:gap = "http://phonegap.com/ns/1.0"
-        id        = "com.pjo.myshoppingcart"
-        version   = "1.150728.0958">
+        id        = "com.pjo.myabsences"
+        version   = "1.150806.1200">
 
-    <name>UI5Jobs</name>
+    <name>MyAbsence</name>
     <description>
-        UI5Jobs.
+        UI5 MyAbsence.
     </description>
 
     <author href="#" email="Paul@ostridge.com">
@@ -67,9 +67,9 @@
     <!-- A list of available plugins are available at https://build.phonegap.com/plugins -->
   
    
- <icon src="icon.png" />
-<splash src="splash.png" />
+ <icon 		src="icon.png" />
 
+<gap:splash src="splash.png" />
 
     <access origin="*"/>
 
