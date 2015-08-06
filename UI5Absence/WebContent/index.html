@@ -113,7 +113,7 @@ function setCounts()
 						
 						if (rowsArray.length>0){
 							TotalLieuCnt=0+rowsArray[0].TotalLieu;
-							alert(TotalLieuCnt)
+							
 							sap.ui.getCore().byId("TileLieu").setNumber(TotalLieuCnt);
 						}
 							
@@ -202,7 +202,8 @@ var tileContainer = new sap.m.TileContainer({
 
 var page  = new sap.m.Page('homePage',{
 	title:"Absence Management",    
-	headerContent:new sap.m.Button("Settings", {
+	headerContent:
+		new sap.m.Button("Settings", {
 			 
 			 icon:"sap-icon://settings",
 				 press: [ function(){
@@ -210,7 +211,7 @@ var page  = new sap.m.Page('homePage',{
 					 sap.ui.getCore().byId("dlgSettings").open(); ;
 						}]
 			 }),
-    content: tileContainer,enableScrolling:false,showNavButton: "{device>/isPhone}", });
+    content: tileContainer,enableScrolling:false,showNavButton: "{device>/isPhone}" });
 
 var app = new sap.m.App();
 

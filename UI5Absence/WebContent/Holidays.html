@@ -22,7 +22,7 @@ syncTheData();
 			{
 				title : "Details",
 				content : [buildDetails('Holiday')],
-
+				showNavButton: "{device>/isPhone}" 
 
 			}).addStyleClass("sapUiStdPage");
 
@@ -41,11 +41,12 @@ syncTheData();
 				title : "Holidays",
 				icon: "images/SAPUI5.jpg",
 				content : [ buildAbsences('Holiday')],
+				showNavButton: "{device>/isPhone}" ,
 				footer  : new sap.m.Bar (
 						{
 							id : 'master-footer',
 
-							contentRight : [
+							contentLeft : [
 									new sap.m.Button("Add", {
 					   					 text: "Add",
 					  					 press: [ function(){

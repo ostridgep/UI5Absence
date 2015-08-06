@@ -20,7 +20,8 @@ syncTheData();
 			"detail",
 			{
 				title : "Details",
-				content : [buildDetails('Sick')]
+				content : [buildDetails('Sick')],
+				showNavButton: "{device>/isPhone}" 
 
 			}).addStyleClass("sapUiStdPage");
 
@@ -36,13 +37,14 @@ syncTheData();
                     	 window.location.href="index.html"
                      }
 }),
-				title : "Sic Days",
+				title : "Sick Days",
 				icon: "images/SAPUI5.jpg",
 				content : [ buildAbsences('Sick')],
+				showNavButton: "{device>/isPhone}" ,
 				footer  : new sap.m.Bar (
 						{
 							id : 'master-footer',
-							contentRight : [
+							contentLeft : [
 									new sap.m.Button("Add", {
 					   					 text: "Add",
 					  					 press: [ function(){
