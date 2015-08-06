@@ -15,14 +15,17 @@
 <script type="text/javascript">
 var AbsenceType="Sick"
 html5sql.openDatabase("com.pjo.MyAbsence","MyAbsence", 5*1024*1024);	
-syncTheData();
+
 	var oDetailPage = new sap.m.Page(
 			"detail",
 			{
 				title : "Details",
 				content : [buildDetails('Sick')],
-				showNavButton: "{device>/isPhone}" 
-
+				showNavButton: "{device>/isPhone}" ,
+					
+					 navButtonPress: function() {				                  
+						window.location.reload()
+					 }
 			}).addStyleClass("sapUiStdPage");
 
 

@@ -202,15 +202,33 @@ var tileContainer = new sap.m.TileContainer({
 
 var page  = new sap.m.Page('homePage',{
 	title:"Absence Management",    
-	headerContent:
-		new sap.m.Button("Settings", {
-			 
-			 icon:"sap-icon://settings",
-				 press: [ function(){
-					 loadSettings();
-					 sap.ui.getCore().byId("dlgSettings").open(); ;
-						}]
-			 }),
+	footer:new sap.m.Bar (
+			{
+				id : 'master-footer',
+
+				contentRight : [
+
+				       		new sap.m.Button("Settings", {
+				       			 
+				       			 icon:"sap-icon://settings",
+				       				 press: [ function(){
+				       					 loadSettings();
+				       					 sap.ui.getCore().byId("dlgSettings").open(); ;
+				       						}]
+				       			 })
+					],
+			contentLeft : [
+
+				       		new sap.m.Button("Synchronize", {
+				       			 
+				       			 icon:"sap-icon://synchronize",
+				       				 press: [ function(){
+				       					syncTheData();
+				       				
+				       						}]
+				       			 })
+					]
+			}),
     content: tileContainer,enableScrolling:false,showNavButton: "{device>/isPhone}" });
 
 var app = new sap.m.App();

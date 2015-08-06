@@ -15,14 +15,16 @@
 <script type="text/javascript">
 var AbsenceType="Lieu"
 html5sql.openDatabase("com.pjo.MyAbsence","MyAbsence", 5*1024*1024);	
-syncTheData();
+
 	var oDetailPage = new sap.m.Page(
 			"detail",
 			{
 				title : "Details",
 				content : [buildDetails('Lieu')],
-				showNavButton: "{device>/isPhone}" 
-
+				showNavButton: true, 
+				 navButtonPress: function() {				                  
+					window.location.reload()
+				 }
 			}).addStyleClass("sapUiStdPage");
 
 
@@ -40,7 +42,7 @@ syncTheData();
 				title : "Lieu Days",
 				icon: "images/SAPUI5.jpg",
 				content : [ buildAbsences('Lieu')],
-				showNavButton: "{device>/isPhone}" ,
+				
 				footer  : new sap.m.Bar (
 						{
 							id : 'master-footer',

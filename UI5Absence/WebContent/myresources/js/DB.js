@@ -3,7 +3,7 @@ var objid="";
 var objshorttext="";	
 var objaddress="";	
 var objswerk="";		
-
+var pageRefreshed = false;
 var SAPServerPrefix="";
 var SAPServerSuffix="";	
 
@@ -121,7 +121,11 @@ function deleteAllAbsence(type){
 							 if(type==1){
 								 getAbsenceData();
 							 }else{
-								 window.location.reload();
+								 if(pageRefreshed == false){
+									 pageRefreshed = true;
+									 window.location.reload();									 
+								 }else{pageRefreshed = false}
+								 
 							 }
 						 },
 						 function(error, statement){
@@ -157,13 +161,20 @@ function syncTheUploadData(){
 var result;
 var LastSync=""
 var createURL="http://"+localStorage.getItem("Server")+"/MyAbsence/CreateAbsence.php?user="+localStorage.getItem("User");
+var deleteURL="http://"+localStorage.getItem("Server")+"/MyAbsence/UpdateAbsence.php?user="+localStorage.getItem("User");
+var fullURL=""
 
-	html5sql.process("SELECT * from absence where sid = 'NEW' ",
+	html5sql.process("SELECT * from absence where sid = 'NEW' or used = 'DELETE' ",
 	    function(transaction, results, rowsArray){
 		  syncCnt=rowsArray.length;
 	      for(var i = 0; i < rowsArray.length; i++){
-	    	  
-	    	  $.getJSON(createURL+"&type="+rowsArray[i].type+"&start="+rowsArray[i].start+"&end="+rowsArray[i].end+"&days="+rowsArray[i].days+"&desc="+rowsArray[i].description+"&id="+rowsArray[i].id, 
+	    	  if (rowsArray[i].used =='DELETE'){
+	    		  fullURL=deleteURL+"&id="+rowsArray[i].sid+"&used="+rowsArray[i].used
+	    	  }else{
+	    		  fullURL=createURL+"&type="+rowsArray[i].type+"&start="+rowsArray[i].start+"&end="+rowsArray[i].end+"&days="+rowsArray[i].days+"&desc="+rowsArray[i].description+"&id="+rowsArray[i].id+"&used="+rowsArray[i].used
+	    	  }
+	    		//alert(fullURL)  
+	    	  $.getJSON(fullURL, 
 		    		  function(result){
 		    	  
 		    	  $.each(result, function(i, field){
@@ -179,7 +190,9 @@ var createURL="http://"+localStorage.getItem("Server")+"/MyAbsence/CreateAbsence
 		    			  				 localStorage.setItem('LastSync',LastSync);
 			    			  				syncCnt--;
 			    			  				 if(syncCnt==0){
-			    			  					 window.location.reload()
+			    								
+			    									 window.location.reload();									 
+			    								
 			    			  				 }
 				    					 },
 				    					 function(error, statement){
@@ -220,8 +233,8 @@ function getAbsenceData(){
 			            for(var i = 0; i < value.length; i++) {
 			                var item = value[i];
 			                
-			    		  html5sql.process("INSERT INTO Absence (type ,start, sid, end, days , description) VALUES ("+
-			 					 "'"+item.type+"','"+item.start+"','"+ item.id +"','"+item.end+"','"+item.days+"','"+item.description+"');",
+			    		  html5sql.process("INSERT INTO Absence (type ,start, sid, end, days , description, used) VALUES ("+
+			 					 "'"+item.type+"','"+item.start+"','"+ item.id +"','"+item.end+"','"+item.days+"','"+item.description+"','"+item.used+"');",
 			    					 function(){
 			    						 //alert("Success dropping Tables");
 			    			  		LastSync=formatDateTimeStamp(getDateStamp())
@@ -231,7 +244,10 @@ function getAbsenceData(){
 			    			  				 localStorage.setItem('LastSync',LastSync);
 			    			  				syncCnt--;
 			    			  				 if(syncCnt==0){
-			    			  					 window.location.reload()
+			    								 if(pageRefreshed == false){
+			    									 pageRefreshed = true;
+			    									 window.location.reload();									 
+			    								 }else{pageRefreshed = false}
 			    			  				 }
 					    					 },
 					    					 function(error, statement){
@@ -416,9 +432,12 @@ function SetConfigParam(type, value){
 function deleteDBAbsence(id)
 {
 
-	html5sql.process("DELETE from absence  where id = '"+id+"' ",
+	html5sql.process("Update absence set used = 'DELETE' where id = '"+id+"' ",
 	 function(){
-		//window.location.reload();
+		 if(pageRefreshed == false){
+			 pageRefreshed = true;
+			 window.location.reload();									 
+		 }else{pageRefreshed = false}
 	 },
 	 function(error, statement){
 		alert("Error: " + error.message + " when deleting absence processing " + statement);
@@ -443,7 +462,11 @@ function createAbsence(type,start,end,days, description)
 	html5sql.process("INSERT INTO Absence (type ,start, used, sid, end, days , description) VALUES ("+
 					 "'"+type+"','"+start+"','"+used+"','NEW','"+end+"','"+days+"','"+description+"');",
 	 function(){
-		window.location.reload();
+		 if(pageRefreshed == false){
+			 pageRefreshed = true;
+			 window.location.reload();									 
+		 }else{pageRefreshed = false}
+		
 	 },
 	 function(error, statement){
 		alert("Error: " + error.message + " when createActivity processing " + statement);

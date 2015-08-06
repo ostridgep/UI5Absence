@@ -77,7 +77,7 @@ var firstEntry="none:-1";
 
 function buildAbsences(type){
 	AbsenceType = type;		
-	html5sql.process("SELECT *  FROM Absence where type = '"+type+"' order by start;",
+	html5sql.process("SELECT *  FROM Absence where type = '"+type+"' and used <> 'DELETE' order by start;",
 			 function(transaction, results, rowsArray){
 				if(rowsArray.length >0){
 					firstEntry="absence:"+rowsArray[0].id
