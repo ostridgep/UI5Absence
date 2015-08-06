@@ -3,23 +3,15 @@ var currentAbsence='';
 var currentType='';
 	var absenceFooter = new sap.m.Bar({
 		id: 'AbsenceFooter',
-		contentLeft : [
+		contentRight : [
 						new sap.m.Button("Delete", {
 							 text: "Delete",
 							 press: [ function(){
 									deleteAbsence() ;
 									}]
 						 })
-						],
-		contentRight : [
-									         
-					new sap.m.Button("Edit", {
-	   					 text: "Edit",
-	  					 press: [ function(){
-	  							editAbsence() ;
-	  							}]
-						 })
-					]
+						]
+		
 	})
 
 
@@ -82,6 +74,7 @@ function buildDetailsContent(aid,type){
 						 sap.ui.getCore().getElementById('HEADER').setNumber(rowsArray[0].days)	
 						 sap.ui.getCore().getElementById('HEADER').setNumberUnit("Days")	
 						 if(type == 'Lieu'){
+							 
 							 if(rowsArray[0].days<0){
 								 sap.ui.getCore().getElementById('State').setText("Off in Lieu")		
 								 sap.ui.getCore().getElementById('State').setState("Success")
@@ -91,6 +84,7 @@ function buildDetailsContent(aid,type){
 							 }
 							 
 						 }else{
+							 
 							 sap.ui.getCore().getElementById('State').setText(type)		
 							 sap.ui.getCore().getElementById('State').setState("Success")							 
 						 }
