@@ -208,5 +208,5 @@ function deleteAbsence()
 {
 
 deleteDBAbsence(currentAbsence)
-location.reload();
+
 }

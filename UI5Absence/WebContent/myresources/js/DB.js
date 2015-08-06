@@ -434,10 +434,9 @@ function deleteDBAbsence(id)
 
 	html5sql.process("Update absence set used = 'DELETE' where id = '"+id+"' ",
 	 function(){
-		 if(pageRefreshed == false){
-			 pageRefreshed = true;
+		 
 			 window.location.reload();									 
-		 }else{pageRefreshed = false}
+
 	 },
 	 function(error, statement){
 		alert("Error: " + error.message + " when deleting absence processing " + statement);
