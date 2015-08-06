@@ -1,0 +1,83 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<title>MyAbsence - Holidays</title>
+<script src="resources/sap-ui-core.js" type="text/javascript"
+	id="sap-ui-bootstrap" data-sap-ui-libs="sap.m,sap.ui.commons"
+	data-sap-ui-theme="sap_bluecrystal">
+	
+</script>
+<script src="myresources/js/build.js"></script>
+<script src="myresources/js/buildDetails.js"></script>
+<script src="myresources/js/html5sql.js"></script>  
+<script src="myresources/js/DB.js"></script>
+<script type="text/javascript">
+var AbsenceType="Lieu"
+html5sql.openDatabase("com.pjo.MyAbsence","MyAbsence", 5*1024*1024);	
+syncTheData();
+	var oDetailPage = new sap.m.Page(
+			"detail",
+			{
+				title : "Details",
+				content : [buildDetails('Lieu')]
+
+			}).addStyleClass("sapUiStdPage");
+
+
+	//create first master page
+
+	var oMasterPage = new sap.m.Page(
+			"master",
+			{
+				 headerContent : new sap.m.Button({
+                     icon: "sap-icon://home",
+                     press : function() {
+                    	 window.location.href="index.html"
+                     }
+}),
+				title : "Lieu Days",
+				icon: "images/SAPUI5.jpg",
+				content : [ buildAbsences('Lieu')],
+				footer  : new sap.m.Bar (
+						{
+							id : 'master-footer',
+							contentRight : [
+									new sap.m.Button("Add", {
+					   					 text: "Add",
+					  					 press: [ function(){
+					  						sap.ui.getCore().byId("dlgAbsence").open(); ;
+					  							}]
+										 })
+								]
+						})			 
+
+			});
+	
+	
+	
+	
+	//create SplitApp()
+	var oSplitApp = new sap.m.SplitApp({
+		detailPages: [oDetailPage],
+		masterPages: [oMasterPage],
+		initialDetail: "detail",
+		initialMaster: "master",
+		afterMasterOpen: function(){
+			jQuery.sap.log.info("master is opened");
+		},
+		afterMasterClose: function(){
+			jQuery.sap.log.info("master is closed");
+		}
+	});
+
+	if(jQuery.device.is.tablet || jQuery.device.is.desktop){
+		oSplitApp.setDefaultTransitionNameDetail("fade");	
+	}
+
+	oSplitApp.placeAt("body");
+</script>
+</head>
+<body id="body" class="sapUiBody">
+</body>
+</html>

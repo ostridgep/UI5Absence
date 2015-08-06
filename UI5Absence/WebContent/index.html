@@ -1,0 +1,231 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<title>MyAbsence</title>
+<script src="resources/sap-ui-core.js" type="text/javascript"
+	id="sap-ui-bootstrap" data-sap-ui-libs="sap.m,sap.ui.commons"
+	data-sap-ui-theme="sap_bluecrystal">
+	
+</script>
+<script src="myresources/js/html5sql.js"></script>  
+<script src="myresources/js/DB.js"></script>
+
+<script type="text/javascript">
+var TotalHolidayCnt=0;
+var TotalSickCnt=0;
+var TotalLieuCnt=0
+var HolidayCnt=0
+var SickCnt=0
+var LieuCnt=0
+var formSettings = new sap.m.Dialog("dlgSettings",{
+    title:"Settings",
+    modal: true,
+    contentWidth:"1em",
+    buttons: [
+				new sap.m.Button("Save", {
+				    text: "Save",
+				   tap: [ function(oEvt) {		
+					   
+					   updateConfig(sap.ui.getCore().byId("Server").getValue(),
+							   sap.ui.getCore().byId("User").getValue(),
+							   sap.ui.getCore().byId("Holiday").getValue(),
+							   sap.ui.getCore().byId("Sick").getValue()) ;
+					   setCounts();
+					   formSettings.close()} ]
+				}),   
+				new sap.m.Button("Cancel", {
+				    text: "Cancel",
+				    tap: [ function(oEvt) {		  
+						 
+				    	formSettings.close()
+						  } ]
+				})
+				],					
+    content:[
+ 			new sap.ui.layout.form.SimpleForm({
+				minWidth : 1024,
+				maxContainerCols : 2,
+				content : [
+							
+			                new sap.m.Label({text:"Server"}),
+							new sap.m.Input("Server",{type: sap.m.InputType.Input}),
+							new sap.m.Label({text:"User"}),
+							new sap.m.Input("User",{type: sap.m.InputType.Input}),
+					        new sap.m.Label({text:"Total Holidays"}),
+							new sap.m.Input("Holiday",{type: sap.m.InputType.Input}),
+							new sap.m.Label({text:"Total Sick Days"}),
+							new sap.m.Input("Sick",{type: sap.m.InputType.Input}),
+							new sap.m.Label({text:""}),
+			                new sap.m.Button("DeleteAbsence", {
+							    text: "Delete All Absence Data",
+							    tap: [ function(oEvt) {		  
+									deleteAllAbsence(0) 
+							    	formSettings.close()
+									  } ]
+							}),
+							new sap.m.Label({text:""}),
+			                new sap.m.Button("GetAbsence", {
+							    text: "Sync Absence Data",
+							    tap: [ function(oEvt) {		  
+									deleteAllAbsence(1) ;
+									//getAbsenceData()
+							    	formSettings.close()
+									  } ]
+							})
+			               
+			                 
+						]
+ 					})
+
+            ]
+ })
+function loadSettings(){
+	   sap.ui.getCore().byId("Server").setValue(localStorage.getItem("Server"))
+	   sap.ui.getCore().byId("User").setValue(localStorage.getItem("User"))
+	   sap.ui.getCore().byId("Holiday").setValue(localStorage.getItem("Holiday"))
+	   sap.ui.getCore().byId("Sick").setValue(localStorage.getItem("Sick"))
+
+
+}
+function setCounts()
+{
+
+	html5sql.process("SELECT * FROM Config  where type = 'Holiday'",
+	 function(transaction, results, rowsArray){
+		if (rowsArray.length>0){
+			TotalHolidayCnt = rowsArray[0].value;
+	   		
+		}
+		
+			html5sql.process("SELECT * FROM Config  where type = 'Sick'",
+			 
+			 function(transaction, results, rowsArray){
+				
+				if (rowsArray.length>0){
+					TotalSickCnt = rowsArray[0].value;
+					 
+	
+				}	
+				
+					html5sql.process("SELECT SUM(days) AS TotalLieu FROM Absence where type = 'Lieu' and used = 'NO';",
+					 function(transaction, results, rowsArray){
+						
+						if (rowsArray.length>0){
+							TotalLieuCnt=0+rowsArray[0].TotalLieu;
+							alert(TotalLieuCnt)
+							sap.ui.getCore().byId("TileLieu").setNumber(TotalLieuCnt);
+						}
+							
+							html5sql.process("SELECT SUM(days) AS TotalHolidays FROM Absence where type = 'Holiday' ;",
+							 function(transaction, results, rowsArray){
+									if (rowsArray.length>0){
+										HolidayCnt=rowsArray[0].TotalHolidays;
+									}
+									sap.ui.getCore().byId("TileHoliday").setNumber(TotalHolidayCnt-HolidayCnt);
+									
+									html5sql.process("SELECT SUM(days) AS TotalSick FROM Absence where type = 'Sick' ;",
+											 function(transaction, results, rowsArray){
+												 if (rowsArray.length>0){
+														SickCnt=rowsArray[0].TotalSick;
+												 }
+												sap.ui.getCore().byId("TileSick").setNumber(TotalSickCnt-SickCnt);
+												
+												
+											 },
+											 function(error, statement){
+												 
+											 }        
+											);									
+
+								
+							 },
+							 function(error, statement){
+								
+							 }        
+							);
+						
+					 },
+					 function(error, statement){
+						 alert("error")
+					 }        
+					);
+				
+			 },
+			 function(error, statement){
+
+			 }        
+			);
+
+	$( "#dataCount").trigger('create');	
+	 },
+	 function(error, statement){
+
+	 }        
+	);
+}
+
+html5sql.openDatabase("com.pjo.MyAbsence","MyAbsence", 5*1024*1024);	
+createDB();
+
+var tileContainer = new sap.m.TileContainer({
+	tiles:
+		[
+		new sap.m.StandardTile('TileHoliday',
+				{
+			title:"Holidays",
+			icon:"sap-icon://calendar",
+			number:'0',
+			press:[ function(){window.location.href="Holidays.html"}]
+		
+		}),
+		new sap.m.StandardTile('TileSick',
+				{
+			title:"Sick",
+			icon:"sap-icon://stethoscope",
+			number:'0',
+			press:[ function(){window.location.href="Sick.html"}]
+		
+		}),
+		new sap.m.StandardTile('TileLieu',
+				{
+			title:"In Lieu",
+			icon:"sap-icon://time-account",
+			number:'0',
+			press:[ function(){window.location.href="Lieu.html"}]
+		
+		})
+		]
+		
+});
+
+
+var page  = new sap.m.Page('homePage',{
+	title:"Absence Management",    
+	headerContent:new sap.m.Button("Settings", {
+			 
+			 icon:"sap-icon://settings",
+				 press: [ function(){
+					 loadSettings();
+					 sap.ui.getCore().byId("dlgSettings").open(); ;
+						}]
+			 }),
+    content: tileContainer,enableScrolling:false,showNavButton: "{device>/isPhone}", });
+
+var app = new sap.m.App();
+
+app.setInitialPage(page.getId());	
+	
+
+
+page.placeAt("body");
+
+</script>
+</head>
+<body id="body" class="sapUiBody">
+</body>
+<Script>
+setCounts();
+
+</Script>
+</html>
