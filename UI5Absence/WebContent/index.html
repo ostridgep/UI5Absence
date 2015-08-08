@@ -108,7 +108,7 @@ function setCounts()
 	
 				}	
 				
-					html5sql.process("SELECT SUM(days) AS TotalLieu FROM Absence where type = 'Lieu' and used = 'NO';",
+					html5sql.process("SELECT SUM(days) AS TotalLieu FROM Absence where type = 'Lieu' and used <>  'DELETE';",
 					 function(transaction, results, rowsArray){
 						
 						if (rowsArray.length>0){

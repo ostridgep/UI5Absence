@@ -118,6 +118,7 @@ function deleteAllAbsence(type){
 		
 		html5sql.process(sqlstatement,
 						 function(){
+						 localStorage.setItem("LastSync","")
 							 if(type==1){
 								 getAbsenceData();
 							 }else{
@@ -201,7 +202,7 @@ var fullURL=""
 			    									 window.location.reload();	
 			    				    			  		html5sql.process("DELETE from Absence where sid =  'DELETE';",
 			    						    					 function(){
-			    				    			  				 
+			    				    			  				 	
 			    						    					 },
 			    						    					 function(error, statement){
 			    						    						opMessage("Error: " + error.message + " when SetConfigParam processing " + statement);
@@ -225,6 +226,9 @@ var fullURL=""
 	    	  
 	    	  
 	      }
+	    if(rowsArray.length==0){
+	    	 window.location.reload();	
+	    }
 	    },
 	    function(error, statement){
 	      //hande error here           
@@ -297,9 +301,11 @@ function syncTheData(){
 		
 	$.getJSON(getURL, 
 			    		  function(result){
-		//alert(result)
+		//alert(getURL)
 			for(var key in result) {
+				
 			    var value = result[key];
+			    //alert(value)
 			    if(typeof value == 'object') {
 			        if(value instanceof Array) {
 			            // an array. loop through children
@@ -307,9 +313,9 @@ function syncTheData(){
 			        	//alert (syncCnt);
 			            for(var i = 0; i < value.length; i++) {
 			                var item = value[i];
-			           
-			    		  html5sql.process("INSERT INTO Absence (type ,start, sid, end, days , description,comments) VALUES ("+
-			 					 "'"+item.type+"','"+item.start+"','"+ item.id +"','"+item.end+"','"+item.days+"','"+item.description+"','"+item.comments+"');",
+			                //alert(item.description)
+			    		  html5sql.process("INSERT INTO Absence (type , used, start, sid, end, days , description, comments) VALUES ("+
+			 					 "'"+item.type+"','"+item.used+"','"+item.start+"','"+ item.id +"','"+item.end+"','"+item.days+"','"+item.description+"','"+item.comments+"');",
 			    					 function(){
 			    			  			    syncCnt--;
 			    			  				if(syncCnt==0){
@@ -321,6 +327,7 @@ function syncTheData(){
 									    					 function(){
 							    			  				 localStorage.setItem('LastSync',LastSync);
 							    			  				 doUpload=false
+							    			  				 
 							    			  				 syncTheUploadData()
 									    					 },
 									    					 function(error, statement){
@@ -330,7 +337,7 @@ function syncTheData(){
 			    			  				}
 			    					 },
 			    					 function(error, statement){
-			    						opMessage("Error: " + error.message + " when SetConfigParam processing " + statement);
+			    						alert("Error: " + error.message + " when SetConfigParam processing " + statement);
 			    					 }        
 			    					);
 			            }
@@ -494,9 +501,9 @@ function createAbsence(type,start,end,days, description, comments)
 {
 	
 	var used ='';
-	if (type=='Lieu'){
+	
 		used = 'NO';
-	}
+	
 	
 	html5sql.process("INSERT INTO Absence (type ,start, used, sid, end, days , description, comments) VALUES ("+
 					 "'"+type+"','"+start+"','"+used+"','NEW','"+end+"','"+days+"','"+description+"','"+comments+"');",
