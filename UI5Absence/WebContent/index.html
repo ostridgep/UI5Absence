@@ -12,12 +12,58 @@
 <script src="myresources/js/DB.js"></script>
 
 <script type="text/javascript">
+var LogState;
 var TotalHolidayCnt=0;
 var TotalSickCnt=0;
 var TotalLieuCnt=0
 var HolidayCnt=0
 var SickCnt=0
 var LieuCnt=0
+var dispLog = 							new sap.m.Button("displayLog", {
+    text: "Display Log",
+    tap: [ function(oEvt) {		  
+		displayLog()
+		  } ]
+})
+var oMessagePopover = new sap.m.MessagePopover({
+	width: 400,
+	beforeOpen: function (oEvt) {
+		console.log("beforeOpen", oEvt.getParameters());
+	},
+	beforeClose: function (oEvt) {
+		console.log("beforeClose", oEvt.getParameters());
+	},
+	afterOpen: function (oEvt) {
+		console.log("afterOpen", oEvt.getParameters());
+	},
+	afterClose: function (oEvt) {
+		console.log("afterClose", oEvt.getParameters());
+	},
+	itemSelect: function (oEvt) {
+		console.log("itemSelected", oEvt.getParameters());
+	},
+	listSelect: function (oEvt) {
+		console.log("listSelected", oEvt.getParameters());
+	}
+})
+function addLogToDisplay(type, dt, message) {
+	var mess = new sap.m.MessagePopoverItem({
+		type: type,
+		title: dt,
+		description: message
+	});
+	oMessagePopover.addItem(mess)
+	
+
+	var oObjectMessage = {
+		type: mess.getType(),
+		title: mess.getTitle() || 'Empty',
+		description: mess.getDescription()
+	};
+
+
+}
+
 var formSettings = new sap.m.Dialog("dlgSettings",{
     title:"Settings",
     modal: true,
@@ -26,11 +72,17 @@ var formSettings = new sap.m.Dialog("dlgSettings",{
 				new sap.m.Button("Save", {
 				    text: "Save",
 				   tap: [ function(oEvt) {		
+					   if(sap.ui.getCore().byId("LogState").getState()){
+						   LogState="ON"
+						   
+					   }else{
+						   LogState="OFF"
+					   }
 					   
 					   updateConfig(sap.ui.getCore().byId("Server").getValue(),
 							   sap.ui.getCore().byId("User").getValue(),
 							   sap.ui.getCore().byId("Holiday").getValue(),
-							   sap.ui.getCore().byId("Sick").getValue()) ;
+							   sap.ui.getCore().byId("Sick").getValue(),LogState) ;
 					   setCounts();
 					   formSettings.close()} ]
 				}),   
@@ -64,15 +116,21 @@ var formSettings = new sap.m.Dialog("dlgSettings",{
 							    	formSettings.close()
 									  } ]
 							}),
-							new sap.m.Label({text:""}),
-			                new sap.m.Button("GetAbsence", {
-							    text: "Sync Absence Data",
+							
+							new sap.m.Label({text:"Logging "}),
+							new sap.m.Switch('LogState',{
+								state: true,
+								type: sap.m.SwitchType.AcceptReject
+							}),
+							new sap.m.Button("deleteLog", {
+							    text: "Delete",
 							    tap: [ function(oEvt) {		  
-									deleteAllAbsence(1) ;
-									//getAbsenceData()
-							    	formSettings.close()
+									deleteLog()
 									  } ]
 							})
+
+									 
+					
 			               
 			                 
 						]
@@ -80,11 +138,17 @@ var formSettings = new sap.m.Dialog("dlgSettings",{
 
             ]
  })
+
 function loadSettings(){
 	   sap.ui.getCore().byId("Server").setValue(localStorage.getItem("Server"))
 	   sap.ui.getCore().byId("User").setValue(localStorage.getItem("User"))
 	   sap.ui.getCore().byId("Holiday").setValue(localStorage.getItem("Holiday"))
 	   sap.ui.getCore().byId("Sick").setValue(localStorage.getItem("Sick"))
+	   if(localStorage.getItem("Trace")=="ON"){
+		   sap.ui.getCore().byId("LogState").setState(true)
+	   }else{
+		   sap.ui.getCore().byId("LogState").setState(false)
+	   }
 
 
 }
@@ -167,7 +231,7 @@ function setCounts()
 
 html5sql.openDatabase("com.pjo.MyAbsence","MyAbsence", 5*1024*1024);	
 createDB();
-
+outputLogToDB();
 var tileContainer = new sap.m.TileContainer({
 	tiles:
 		[
@@ -217,6 +281,7 @@ var page  = new sap.m.Page('homePage',{
 				       						}]
 				       			 })
 					],
+			contentMiddle: [dispLog],
 			contentLeft : [
 
 				       		new sap.m.Button("Synchronize", {

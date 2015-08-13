@@ -13,6 +13,120 @@ var demoDataLoaded=0;
 var syncTransactionalDetsUpdated=false;
 var syncReferenceDetsUpdated=false;
 var syncCnt=0;
+
+var dbInProgress=false;
+
+var myArray=[]
+
+
+
+var executeSQL = function(sqlStatement) {
+alert("into execute")
+	var $d = $.Deferred();
+
+	    html5sql.process(sqlStatement,
+	    		function (transaction, results, rowsArray) {
+	    			$d.resolve(results, rowsArray);
+	    			},
+
+	    		function (error, statement) {
+	    			$d.reject(error,statement);
+	    			}
+	    		)
+	    return $d.promise();
+}
+/*
+ * This Function writes the LogInfo to localStorate if the Trace is set to ON
+ */
+function writeLogMessage(type,message){
+	nowd=getDate();
+	nowt=getTime();
+	dtstamp=nowd+nowt;
+	var logmessage = [dtstamp,type,message];
+	var myArray = JSON.parse(localStorage.getItem("LogFile"));
+	if (localStorage.getItem("Trace")=='ON'){ 
+		if (myArray==null){
+			myArray=[]
+		}
+		myArray.push(logmessage);
+		localStorage.setItem("LogFile",JSON.stringify(myArray));
+	}	
+}
+function outputLogToDB(){
+	
+	var sqlStatement=""
+		var myLog=[];
+	
+	if(localStorage["LogFile"]!=null){ 
+		
+		myLog = JSON.parse(localStorage["LogFile"]);
+	}
+	cnt = 0;
+	while(cnt<myLog.length){
+		sqlStatement=sqlStatement+'INSERT INTO LogFile (datestamp , type, message ) VALUES ("'+myLog[cnt][0]+'","'+myLog[cnt][1]+'","'+escape(myLog[cnt][2])+'");'
+
+		cnt++;
+	}
+	
+	if(sqlStatement.length>0){
+		html5sql.process(sqlStatement,
+				 function(){
+				localStorage.removeItem("LogFile");
+					
+				 },
+				 function(error, statement){
+					alert("Error: " + error.message + " when processing writing Log entries to the database");
+				 }        
+		);
+	}
+	
+}
+function deleteLog(){
+	
+
+	
+
+		html5sql.process("Delete From LogFile",
+				 function(){
+					 localStorage.removeItem("LogFile");
+					
+				 },
+				 function(error, statement){
+					alert("Error: " + error.message + " when processing writing Log entries to the database");
+				 }        
+		);
+
+	
+}
+function displayLog(){
+	
+	
+		oMessagePopover.removeAllItems()
+
+		html5sql.process("Select * From LogFile",
+				 function(transaction, results, rowsArray){
+						
+					cnt = 0;
+					while (cnt<rowsArray.length){
+						//alert(rowsArray[cnt].type, rowsArray[cnt].date, rowsArray[cnt].message) 
+						addLogToDisplay(rowsArray[cnt].type, formatDateTime(rowsArray[cnt].datestamp), unescape(rowsArray[cnt].message)) 
+						cnt++;
+					}
+				
+					oMessagePopover.openBy(dispLog)
+					
+				 },
+				 function(error, statement){
+					alert("Error: " + error.message + " when processing writing Log entries to the database");
+				 }        
+		);
+
+	
+}
+
+
+
+
 function zeroFill(x){
     return (x < 10) ? ("0" + x) : x;   
 }			
@@ -54,59 +168,13 @@ function formatDate(dt){
 	return formatteddt;
 	}
 
-function requestSAPData(page,params){
-
-	opMessage(SAPServerPrefix+page+params);
-	var myurl=SAPServerPrefix+page+params;
-
-  $.getJSON(myurl);
-  
-}
-function sendSAPData(page){
-	opMessage(page);
-
-   $.getJSON(page);
+function emptyLog(){
+	
+	localStorage.removeItem("LogFile");
 }
 
-function opMessage(msg){
 
 
-
-	opLog(msg);
-
-
-}
-function prepLogMessage(msg){
-
-nowd=getDate();
-nowt=getTime();
-dtstamp=nowd+nowt;
-
-
-return('INSERT INTO LogFile (datestamp , type, message ) VALUES ("'+dtstamp+'","I","'+ msg+'")');
-
-}
-
-function opLog(msg){
-
-nowd=getDate();
-nowt=getTime();
-dtstamp=nowd+nowt;
-
-
-var sqlstatement='INSERT INTO LogFile (datestamp , type, message ) VALUES ("'+dtstamp+'","I","'+ msg+'");';
-	if (localStorage.Trace=='ON'){
-		html5sql.process(sqlstatement,
-						 function(){
-							 //alert("Success Creating Tables");
-						 },
-						 function(error, statement){
-							 window.console&&console.log("Error: " + error.message + " when processing " + statement);
-						 }        
-				);
-
-	}
-}
 function deleteAllAbsence(type){
 
 	nowd=getDate();
@@ -115,9 +183,10 @@ function deleteAllAbsence(type){
 
 
 	var sqlstatement='DELETE FROM  Absence;';
-		
+	writeLogMessage("Information", "About to Dele All Absence data SQL="+sqlstatement)	
 		html5sql.process(sqlstatement,
 						 function(){
+							writeLogMessage("Success", "Deleting All Absence Data");
 						 localStorage.setItem("LastSync","")
 							 if(type==1){
 								 getAbsenceData();
@@ -130,14 +199,14 @@ function deleteAllAbsence(type){
 							 }
 						 },
 						 function(error, statement){
-							 window.console&&console.log("Error: " + error.message + " when processing " + statement);
+							 writeLogMessage("Error", "deleteAllAbsence: "+ error.message +" - "+ statement);  
 						 }        
 				);
 
 		
 	}
 function createDB(){
-
+	
 	html5sql.process(
 		["SELECT * FROM sqlite_master WHERE type='table';"],
 		function(transaction, results, rowsArray){
@@ -149,7 +218,7 @@ function createDB(){
 				createTables();
 				}
 
-
+		//outputLogToDB();
 		},
 		 function(error, statement){
 			 window.console&&console.log("Error: " + error.message + " when processing " + statement);
@@ -165,17 +234,20 @@ var LastSync=""
 var createURL="http://"+localStorage.getItem("Server")+"/MyAbsence/CreateAbsence.php?user="+localStorage.getItem("User");
 var deleteURL="http://"+localStorage.getItem("Server")+"/MyAbsence/UpdateAbsence.php?user="+localStorage.getItem("User");
 var fullURL=""
-
+	writeLogMessage("Information", "syncTheUploadData: create URL="+createURL)
+	writeLogMessage("Information", "syncTheUploadData: delete URL="+deleteURL)
+	writeLogMessage("Information", "syncTheUploadData: Select New or DELETES")
 	html5sql.process("SELECT * from absence where sid = 'NEW' or used = 'DELETE' ",
 	    function(transaction, results, rowsArray){
 		  syncCnt=rowsArray.length;
-		  
+		  writeLogMessage("Information", "syncTheUploadData: Select returned "+syncCount+" records")
 	      for(var i = 0; i < rowsArray.length; i++){
 	    	  if (rowsArray[i].used =='DELETE'){
 	    		  fullURL=deleteURL+"&id="+rowsArray[i].sid+"&used="+rowsArray[i].used
 	    	  }else{
 	    		  fullURL=createURL+"&type="+rowsArray[i].type+"&start="+rowsArray[i].start+"&end="+rowsArray[i].end+"&days="+rowsArray[i].days+"&desc="+rowsArray[i].description+"&id="+rowsArray[i].id+"&used="+rowsArray[i].used
 	    	  }
+			  writeLogMessage("Information", "syncTheUploadData: Calling Server URL: "+fullURL)
 	    		
 	    	  $.getJSON(fullURL, 
 		    		  function(result){
@@ -190,34 +262,40 @@ var fullURL=""
 		    			  
 		    		  html5sql.process(updateSQL,
 		    					 function(){
-		    						 //alert("Success dropping Tables");
+		    			  		
+
 		    			  		LastSync=formatDateTimeStamp(getDateStamp())
 		    			  		
 		    			  		html5sql.process("UPDATE config SET value = '"+LastSync+"' WHERE type = 'LastSync';",
 				    					 function(){
-		    			  				 localStorage.setItem('LastSync',LastSync);
+		    			  				 	localStorage.setItem('LastSync',LastSync);
+		    			  				 	writeLogMessage("Information", "syncTheUploadData: update LastSync localStorage : "+LastSync)
+		    			  				 	writeLogMessage("Information", "syncTheUploadData: update LastSync Config: "+LastSync)
 			    			  				syncCnt--;
 			    			  				 if(syncCnt==0){
 			    								
 			    									 window.location.reload();	
 			    				    			  		html5sql.process("DELETE from Absence where sid =  'DELETE';",
 			    						    					 function(){
-			    				    			  				 	
+			    				    			  				 writeLogMessage("Success", "syncTheUploadData: DELETE from Absence where sid =  'DELETE'")	
 			    						    					 },
 			    						    					 function(error, statement){
-			    						    						opMessage("Error: " + error.message + " when SetConfigParam processing " + statement);
+			    						    						 writeLogMessage("Error", "syncTheUpload: "+ error.message +" - "+ statement);  
+			    						    						
 			    						    					 }        
 			    						    					);
 			    								
 			    			  				 }
 				    					 },
 				    					 function(error, statement){
-				    						opMessage("Error: " + error.message + " when SetConfigParam processing " + statement);
+				    						 writeLogMessage("Error", "syncTheUpload: "+ error.message +" - "+ statement);  
+				    						
 				    					 }        
 				    					);
 		    					 },
 		    					 function(error, statement){
-		    						opMessage("Error: " + error.message + " when SetConfigParam processing " + statement);
+		    						 writeLogMessage("Error", "syncTheUpload: "+ error.message +" - "+ statement);  
+		    						
 		    					 }        
 		    					);
 		    	  });
@@ -231,7 +309,7 @@ var fullURL=""
 	    }
 	    },
 	    function(error, statement){
-	      //hande error here           
+	    	 writeLogMessage("Error", "syncTheUpload: "+ error.message +" - "+ statement);      
 	    }
 	);			
 		
@@ -240,6 +318,7 @@ function getAbsenceData(){
 	var result;
 	var LastSync=""
 	var getURL="http://"+localStorage.getItem("Server")+"/MyAbsence/GetAbsence.php?user="+localStorage.getItem("User");
+	writeLogMessage("Information", "getAbsenceData: URL: "+getURL)        
 		$.getJSON(getURL, 
 			    		  function(result){
 			for(var key in result) {
@@ -261,6 +340,8 @@ function getAbsenceData(){
 			    			  		html5sql.process("UPDATE config SET value = '"+LastSync+"' WHERE type = 'LastSync';",
 					    					 function(){
 			    			  				 localStorage.setItem('LastSync',LastSync);
+			    			  				 writeLogMessage("Success", "getAbsenceData: Update LastSync localStorage "+LastSync)	
+			    			  				 writeLogMessage("Success", "getAbsenceData: Update LastSync Config "+LastSync)	
 			    			  				syncCnt--;
 			    			  				 if(syncCnt==0){
 			    								 if(pageRefreshed == false){
@@ -270,12 +351,12 @@ function getAbsenceData(){
 			    			  				 }
 					    					 },
 					    					 function(error, statement){
-					    						opMessage("Error: " + error.message + " when SetConfigParam processing " + statement);
+					    						 writeLogMessage("Error", "getAbsenceData: "+ error.message +" - "+ statement);   
 					    					 }        
 					    					);
 			    					 },
 			    					 function(error, statement){
-			    						opMessage("Error: " + error.message + " when SetConfigParam processing " + statement);
+			    						 writeLogMessage("Error", "getAbsenceData: "+ error.message +" - "+ statement);   
 			    					 }        
 			    					);
 			            }
@@ -298,7 +379,7 @@ function syncTheData(){
 	var LastSync=""
 	var doUpload=true
 	var getURL="http://"+localStorage.getItem("Server")+"/MyAbsence/GetNewAbsence.php?user="+localStorage.getItem("User")+ "&lastsync="+localStorage.getItem('LastSync');
-		
+	writeLogMessage("Information", "syncTheData: URL: "+getURL) 	
 	$.getJSON(getURL, 
 			    		  function(result){
 		//alert(getURL)
@@ -317,6 +398,8 @@ function syncTheData(){
 			    		  html5sql.process("INSERT INTO Absence (type , used, start, sid, end, days , description, comments) VALUES ("+
 			 					 "'"+item.type+"','"+item.used+"','"+item.start+"','"+ item.id +"','"+item.end+"','"+item.days+"','"+item.description+"','"+item.comments+"');",
 			    					 function(){
+			    			  				writeLogMessage("Success", "syncTheData: "+"INSERT INTO Absence (type , used, start, sid, end, days , description, comments) VALUES ("+
+			    				 					 "'"+item.type+"','"+item.used+"','"+item.start+"','"+ item.id +"','"+item.end+"','"+item.days+"','"+item.description+"','"+item.comments+"');")	
 			    			  			    syncCnt--;
 			    			  				if(syncCnt==0){
 			    			  						
@@ -325,19 +408,21 @@ function syncTheData(){
 							    			  		
 							    			  		html5sql.process("UPDATE config SET value = '"+LastSync+"' WHERE type = 'LastSync';",
 									    					 function(){
+							    			  				writeLogMessage("Success", "syncTheData: "+"UPDATE config SET value = '"+LastSync+"' WHERE type = 'LastSync';")	
+						    			  			    
 							    			  				 localStorage.setItem('LastSync',LastSync);
 							    			  				 doUpload=false
 							    			  				 
 							    			  				 syncTheUploadData()
 									    					 },
 									    					 function(error, statement){
-									    						opMessage("Error: " + error.message + " when SetConfigParam processing " + statement);
+									    						 writeLogMessage("Error", "syncTheData: "+ error.message +" - "+ statement);   
 									    					 }        
 									    					);
 			    			  				}
 			    					 },
 			    					 function(error, statement){
-			    						alert("Error: " + error.message + " when SetConfigParam processing " + statement);
+			    						 writeLogMessage("Error", "syncTheData: "+ error.message +" - "+ statement);   
 			    					 }        
 			    					);
 			            }
@@ -358,17 +443,19 @@ function syncTheData(){
 			
 			
 }
-function updateConfig(Server, User, Holiday, Sick){
+function updateConfig(Server, User, Holiday, Sick, Trace){
 	SetConfigParam('Server', Server);
 	SetConfigParam('User', User);
 	SetConfigParam('Holiday', Holiday);
 	SetConfigParam('Sick', Sick);
+	SetConfigParam('Trace', Trace);
 }
 function SetLocalStorage(){
-
+	writeLogMessage("Information", "SetLocalStorage: SELECT * from Config ") 
 html5sql.process(
     ["SELECT * from Config "],
     function(transaction, results, rowsArray){
+    	writeLogMessage("Success", "SetLocalStorage: Getting Config records = "+rowsArray.length) 
       for(var i = 0; i < rowsArray.length; i++){
         //each row in the rowsArray represents a row retrieved from the database
 		
@@ -377,7 +464,7 @@ html5sql.process(
       }
     },
     function(error, statement){
-      //hande error here           
+    	writeLogMessage("Error", "SetLocalStorage: "+ error.message +" - "+ statement);         
     }
 );			
 	
@@ -386,10 +473,11 @@ html5sql.process(
 
 
 function GetConfigParam(type){
-
+	writeLogMessage("Information", "GetConfigParam: SELECT * from Config where type = "+type) 
 	html5sql.process(
 		["SELECT * from Config where type = '"+type+"'"],
 		function(transaction, results, rowsArray){
+			writeLogMessage("Success", "GetConfigParam: Getting Config type = "+type) 
 			if( rowsArray.length > 0) {
 				localStorage.setItem(rowsArray[0].type,rowsArray[0].value);
 				
@@ -398,12 +486,12 @@ function GetConfigParam(type){
 
 		},
 		 function(error, statement){
-			 window.console&&console.log("Error: " + error.message + " when processing " + statement);
+			writeLogMessage("Error", "GetConfigParam: "+ error.message +" - "+ statement);    
 		 }   
 	);
 }
 function SetConfigParam(type, value){
-
+	writeLogMessage("Information", "SetConfigParam: SELECT * from Config where type = "+type+" value = "+value) 
 		
 	localStorage.setItem(type,value);
 			
@@ -421,12 +509,12 @@ function SetConfigParam(type, value){
 				 //alert("Success dropping Tables");
 			 },
 			 function(error, statement){
-				opMessage("Error: " + error.message + " when SetConfigParam processing " + statement);
+				 writeLogMessage("Error", "SetConfigParam: "+ error.message +" - "+ statement);    
 			 }        
 			);
 		},
 		function(error, statement){
-		 opMessage("Error: " + error.message + " when SetConfigParam processing " + statement);          
+			writeLogMessage("Error", "SetConfigParam: "+ error.message +" - "+ statement);        
 		}
 	);
 }		
@@ -453,29 +541,32 @@ function SetConfigParam(type, value){
 
 function deleteDBAbsence(id)
 {
-
+	writeLogMessage("Information", "deleteDBAbsence: Delete Absence id = "+id) 
+	
 	html5sql.process("Select sid from absence where id = '"+id+"' ",
 		function(transaction, results, rowsArray){
+		writeLogMessage("Success", "deleteDBAbsence: Select Absence id = "+id) 
 		if(rowsArray[0].sid=='NEW'){
 			html5sql.process("delete from absence where id = '"+id+"' ",
 					 function(){
-						 
+							writeLogMessage("Success", "deleteDBAbsence: Delete Absence id = "+id) 
 							 window.location.reload();									 
 
 					 },
 					 function(error, statement){
-						alert("Error: " + error.message + " when deleting absence processing " + statement);
+						 writeLogMessage("Error", "deleteDBAbsence: "+ error.message +" - "+ statement);
 					 }        
 					);
 		}else{
 			html5sql.process("Update absence set used = 'DELETE' where id = '"+id+"' ",
 					 function(){
-						 
+					writeLogMessage("Success", "deleteDBAbsence: Update absence set used = 'DELETE' where id = '"+id+"' ")  
 							 								 
 						window.location.reload();	
 					 },
 					 function(error, statement){
-						alert("Error: " + error.message + " when deleting absence processing " + statement);
+						 writeLogMessage("Error", "deleteDBAbsence: "+ error.message +" - "+ statement);
+
 					 }        
 					);
 		}
@@ -484,7 +575,7 @@ function deleteDBAbsence(id)
 
 	 },
 	 function(error, statement){
-		alert("Error: " + error.message + " when deleting absence processing " + statement);
+		 writeLogMessage("Error", "deleteDBAbsence: "+ error.message +" - "+ statement);
 	 }        
 	);
 }
@@ -495,19 +586,50 @@ function deleteDBAbsence(id)
 //
 //*************************************************************************************************************************
 
-
-
 function createAbsence(type,start,end,days, description, comments)
 {
-	
+	Log="";
+	dbInProgress=true;
 	var used ='';
+		
+	used = 'NO';
+	writeLogMessage("Information", "createAbsence: INSERT INTO Absence (type ,start, used, sid, end, days , description, comments) VALUES ("+
+				 "'"+type+"','"+start+"','"+used+"','NEW','"+end+"','"+days+"','"+description+"','"+comments+"');")
+
+		html5sql.process("INSERT INTO Absence (type ,start, used, sid, end, days , description, comments) VALUES ("+
+						 "'"+type+"','"+start+"','"+used+"','NEW','"+end+"','"+days+"','"+description+"','"+comments+"');",
+		 function(){
+			
+			 if(pageRefreshed == false){
+				 pageRefreshed = true;
+				 window.location.reload();									 
+			 }else{pageRefreshed = false}
+			
+		 },
+		 function(error, statement){
+			 
+			 writeLogMessage("Error", "createAbsence: "+ error.message +" - "+ statement);
+			 
+		 }        
+		);
+
 	
-		used = 'NO';
-	
-	
+}
+
+function createAbsence1(type,start,end,days, description, comments)
+{
+	Log="";
+	dbInProgress=true;
+	var used ='';
+		
+	used = 'NO';
+	writeLogMessage("Information", "createAbsence: INSERT INTO Absence (type ,start, used, sid, end, days , description, comments) VALUES ("+
+				 "'"+type+"','"+start+"','"+used+"','NEW','"+end+"','"+days+"','"+description+"','"+comments+"');") 	
+
 	html5sql.process("INSERT INTO Absence (type ,start, used, sid, end, days , description, comments) VALUES ("+
 					 "'"+type+"','"+start+"','"+used+"','NEW','"+end+"','"+days+"','"+description+"','"+comments+"');",
 	 function(){
+		
 		 if(pageRefreshed == false){
 			 pageRefreshed = true;
 			 window.location.reload();									 
@@ -515,7 +637,9 @@ function createAbsence(type,start,end,days, description, comments)
 		
 	 },
 	 function(error, statement){
-		alert("Error: " + error.message + " when createActivity processing " + statement);
+		 
+		 writeLogMessage("Error", "createAbsence: "+ error.message +" - "+ statement);
+		 outputLog();
 	 }        
 	);
 }
@@ -530,7 +654,7 @@ function createTables() {
 
 
 
-	//opMessage("Creating The Tables");	
+	
         
 		sqlstatement='CREATE TABLE IF NOT EXISTS Config     	( id integer primary key autoincrement,  type TEXT, value TEXT);'+
 					 'CREATE TABLE IF NOT EXISTS Absence     	( id integer primary key autoincrement,  sid TEXT, type TEXT, start TEXT, end TEXT, days TEXT, used TEXT, description TEXT, comments TEXT);'+
@@ -543,7 +667,7 @@ function createTables() {
 							
 						 },
 						 function(error, statement){
-							 opMessage("Error: " + error.message + " when create processing " + statement);
+							 alert("Error: " + error.message + " when create processing " + statement);
 							
 							 
 						 }        
@@ -593,7 +717,7 @@ function emptyTables() {
 						 },
 						 function(error, statement){
 							 
-							 opMessage("Error: " + error.message + " when delete processing " + statement);
+							alert("Error: " + error.message + " when delete processing " + statement);
 						 }        
 				);
 }
@@ -604,7 +728,7 @@ function DeleteLog() {
 							 //alert("Success Deleting Logfile");
 						 },
 						 function(error, statement){
-							 opMessage("Error: " + error.message + " when processing " + statement);
+							alert("Error: " + error.message + " when processing " + statement);
 						 }        
 				);
 

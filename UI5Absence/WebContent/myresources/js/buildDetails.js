@@ -93,10 +93,10 @@ function buildDetailsContent(aid,type){
 					 }
 					
 					
-					
+					 outputLogToDB();	
 				 },
 				 function(error, statement){
-					 
+					 outputLogToDB(); 
 				 }        
 				);	
 	}
